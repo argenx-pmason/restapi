@@ -66,7 +66,7 @@ const App = () => {
         .catch((error) => console.error(error));
     },
     [username, setUsername] = useState("pmason"),
-    [password, setPassword] = useState("Ruth-824891"),
+    [password, setPassword] = useState(""),
     logon = () => {
       const url = "https://xarprod.ondemand.sas.com/lsaf/api/logon",
         myHeaders = new Headers();
