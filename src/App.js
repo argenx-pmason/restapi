@@ -22,7 +22,7 @@ const App = () => {
   LicenseInfo.setLicenseKey(
     "6b1cacb920025860cc06bcaf75ee7a66Tz05NDY2MixFPTE3NTMyNTMxMDQwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI="
   );
-  const title = "Data",
+  const title = "LSAF REST API testing",
     innerHeight = window.innerHeight,
     urlPrefix = window.location.protocol + "//" + window.location.host,
     { href } = window.location,
@@ -225,14 +225,17 @@ const App = () => {
   return (
     <>
       <AppBar position="fixed">
-        <Toolbar variant="dense" sx={{ backgroundColor: "#cccccc" }}>
+        <Toolbar variant="dense" sx={{ backgroundColor: "#f7f7f7" }}>
           <Box
             sx={{
-              backgroundColor: "#eeeeee",
-              color: "green",
+              border: 1,
+              borderRadius: 2,
+              color: "black",
               fontWeight: "bold",
               boxShadow: 3,
-              fontSize: 16,
+              fontSize: 14,
+              height: 23,
+              padding: 0.3,
             }}
           >
             &nbsp;&nbsp;{title}&nbsp;&nbsp;
@@ -272,11 +275,13 @@ const App = () => {
           <Button onClick={() => encryptPassword()}>
             Get Encrypted Password
           </Button>
-          <Box>Encrypted Password: {encryptedPassword}</Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>
+            Encrypted Password: {encryptedPassword}
+          </Box>
           <Button onClick={() => logon()}>Logon & get token</Button>
-          <Box>Token: {token}</Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>Token: {token}</Box>
           <Button onClick={() => submitJob()}>Submit job</Button>
-          <Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>
             Status:{" "}
             <b>
               {submitStatus
@@ -284,26 +289,28 @@ const App = () => {
                 : null}
             </b>
           </Box>
-          <Box>Submission ID: {submissionId ? submissionId : null}</Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>
+            Submission ID: {submissionId ? submissionId : null}
+          </Box>
           <Button onClick={() => getJobStatus()}>Check job status</Button>
-          <Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>
             Job status: <b>{jobStatus ? jobStatus : null}</b>
           </Box>
           <Button onClick={() => getPathManifest()}>
             Get path to manifest
           </Button>
-          <Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>
             Manifest path: <b>{pathManifest ? pathManifest : null}</b>
           </Box>
           <Button onClick={() => getManifest()}>Get manifest file</Button>
-          <Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>
             Log path extracted from manifest XML:{" "}
             <code>{log ? log : null}</code>
           </Box>
           <Button onClick={() => getFileContents()}>
             Get contents of Log file
           </Button>
-          <Box>
+          <Box sx={{ backgroundColor: "#f7f7f7" }}>
             Log: <code>{fileContents ? fileContents : null}</code>
           </Box>
           {/*   <Box sx={{ height: innerHeight - 50, width: "100%" }}>
