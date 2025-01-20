@@ -2,7 +2,7 @@
   "name": "restapi",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/lsaf/webdav/repo/general/biostat/tools/restapi",
+  "homepage": "/lsaf/webdav/repo/general/biostat/apps/restapi",
   "dependencies": {
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",

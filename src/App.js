@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { Info } from "@mui/icons-material";
 import convert from "xml-js";
+import demoJson from "./demo.json";
 import { LicenseInfo } from "@mui/x-license";
 const App = () => {
   LicenseInfo.setLicenseKey(
@@ -43,8 +44,8 @@ const App = () => {
     run = params.get("run"),
     wait = params.get("wait"),
     every = params.get("every"),
-    fileViewerPrefix = `https://${server}/lsaf/filedownload/sdd:/general/biostat/tools/fileviewer/index.html?file=`,
-    logViewerPrefix = `https://${server}/lsaf/filedownload/sdd:/general/biostat/tools/logviewer/index.html?log=`,
+    fileViewerPrefix = `https://${server}/lsaf/filedownload/sdd:/general/biostat/apps/fileviewer/index.html?file=`,
+    logViewerPrefix = `https://${server}/lsaf/filedownload/sdd:/general/biostat/apps/logviewer/index.html?log=`,
     api = "https://" + realhost + "/lsaf/api",
     // urlPrefix = window.location.protocol + "//" + window.location.host,
     // apiRef = useGridApiRef(),
@@ -83,6 +84,7 @@ const App = () => {
     [username, setUsername] = useState(""),
     [password, setPassword] = useState(""),
     [timeTaken, setTimeTaken] = useState(0),
+    [jsonResponse, setJsonResponse] = useState(null),
     // logon with unencrypted password
     logon = () => {
       const url = api + "/logon",
@@ -418,7 +420,6 @@ const App = () => {
         headers: myHeaders,
         redirect: "follow",
       };
-
       fetch(url + apiRequest, requestOptions)
         .then((response) => {
           console.log("getFileContents - response", response);
@@ -427,6 +428,35 @@ const App = () => {
         .then((responseText) => {
           console.log("getFileContents - responseText", responseText);
           setFileContents(responseText);
+        })
+        .catch((error) => console.error(error));
+    },
+    writeSampleJson = (tok) => {
+      const useToken = tok || token,
+        useFile = "/general/biostat/jobs/utils/dev/output/demo.json",
+        url = api,
+        apiRequest = `/repository/files/${useFile}?action=upload`,
+        myHeaders = new Headers(),
+        formdata = new FormData(),
+        jsonString = JSON.stringify(demoJson),
+        blob = new Blob([jsonString], { type: "application/json" });
+
+      formdata.append("file", blob, "demo.json");
+      myHeaders.append("X-Auth-Token", useToken);
+      const requestOptions = {
+        method: "PUT",
+        headers: myHeaders,
+        redirect: "follow",
+        body: formdata,
+      };
+      fetch(url + apiRequest, requestOptions)
+        .then((response) => {
+          console.log("writeSampleJson - response", response);
+          return response.text();
+        })
+        .then((responseText) => {
+          console.log("writeSampleJson - responseText", responseText);
+          setJsonResponse(responseText);
         })
         .catch((error) => console.error(error));
     };
@@ -566,6 +596,12 @@ const App = () => {
         </Button>
         <Box sx={{ backgroundColor: "#f7f7f7" }}>
           Log: <code>{fileContents || null}</code>
+        </Box>
+        <Button onClick={() => writeSampleJson()}>
+          Write a sample JSON file to server
+        </Button>
+        <Box sx={{ backgroundColor: "#f7f7f7" }}>
+          JSON response: <code>{jsonResponse || null}</code>
         </Box>
       </Box>
       <Box sx={{ mt: 9 }} hidden={tabValue !== "2"}>
