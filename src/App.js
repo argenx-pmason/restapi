@@ -684,7 +684,7 @@ const App = () => {
               <Box sx={{ m: 1, mt: 2 }}>
                 Pressing Submit Job will do the following: Logon with encrypted
                 password, Get token, Submit job, Check status until complete
-                (every 2 secs), Get manifest, Show links to manifest items.
+                (every {checkSecs} secs), Get manifest, Show links to manifest items.
               </Box>
             </Grid>
             <Grid item md={12}>
