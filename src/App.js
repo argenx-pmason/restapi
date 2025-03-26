@@ -39,6 +39,7 @@ const App = () => {
   const server = href.split("//")[1].split("/")[0],
     // mode = href.startsWith("http://localhost") ? "local" : "remote",
     // webDavPrefix = urlPrefix + "/lsaf/webdav/repo",
+    // parmRef = useRef(),
     params = new URLSearchParams(document.location.search),
     job = params.get("job"),
     run = params.get("run"),
@@ -56,6 +57,7 @@ const App = () => {
     [checkSecs, setCheckSecs] = useState(5),
     [encryptedPassword, setEncryptedPassword] = useState(null),
     [jobRunning, setJobRunning] = useState(false),
+    [parmsToUse, setParmsToUse] = useState(""),
     encryptPassword = () => {
       const url = api + "/encrypt",
         myHeaders = new Headers();
@@ -139,6 +141,7 @@ const App = () => {
         useUsername = storedUsername || username,
         useEncryptedPassword = storedEncryptedPassword || encryptedPassword,
         useJob = passedJob || jobPath;
+
       myHeaders.append(
         "Authorization",
         "Basic " + btoa(useUsername + ":" + useEncryptedPassword)
@@ -174,8 +177,11 @@ const App = () => {
         "tok",
         tok
       );
-      while (!thisStatus.startsWith("COMPLETED")) {
-        console.log("completed", thisStatus);
+      while (
+        !thisStatus.startsWith("COMPLETED") &&
+        !thisStatus.startsWith("FAILED")
+      ) {
+        console.log("thisStatus", thisStatus);
         //TODO - wait till we have a sumission ID
         await sleep(checkSecs * 1000);
         thisStatus = await getJobStatus(subId, tok);
@@ -236,12 +242,19 @@ const App = () => {
           api,
         myHeaders = new Headers();
       myHeaders.append("X-Auth-Token", passedToken || token);
+      myHeaders.append("Content-Type", "application/json");
       const requestOptions = {
         method: "PUT",
         headers: myHeaders,
         redirect: "follow",
+        // headers: {
+        //   "X-Auth-Token": passedToken || token,
+        //   "Content-Type": "application/json",
+        // },
+        body: parmsToUse,
       };
       setJobRunning(true);
+      console.log(useJob, url + "/jobs/repository" + useJob + "?action=run");
       return fetch(
         url + "/jobs/repository" + useJob + "?action=run",
         requestOptions
@@ -253,6 +266,7 @@ const App = () => {
         .then((responseJson) => {
           console.log("submitJob - responseJson", responseJson);
           setSubmitStatus(responseJson?.status);
+          if (responseJson?.status === "FAILED") setJobRunning(false);
           document.title =
             responseJson?.status?.type +
             " (" +
@@ -468,6 +482,23 @@ const App = () => {
     setUsername(tempUsername);
     setEncryptedPassword(tempEncryptedPassword);
     console.log("params", params, "job", job, "run", run);
+    // for (const value of params.values()) {
+    //   console.log(value);
+    // }
+    const _parmsToUse = {};
+    for (const key of params.keys()) {
+      const value = params.get(key);
+      if (key.startsWith("_")) _parmsToUse[key.slice(1)] = value;
+      console.log(key, value);
+    }
+    console.log(
+      "_parmsToUse",
+      _parmsToUse,
+      "JSON.stringify(_parmsToUse)",
+      JSON.stringify(_parmsToUse)
+    );
+    setParmsToUse(JSON.stringify(_parmsToUse));
+    // parmRef.current.value = _parmsToUse;
     if (job) {
       setJobPath(job);
     } else
@@ -508,9 +539,9 @@ const App = () => {
             &nbsp;&nbsp;{title}&nbsp;&nbsp;
           </Box>
           <Tabs value={tabValue} onChange={handleChangeTab}>
-            <Tab label="Step by step" value="1" />
-            <Tab label="Automated" value="2" />
-            <Tab label="Improved" value="3" />
+            <Tab label="Good" value="1" />
+            <Tab label="Better" value="2" />
+            <Tab label="Best" value="3" />
           </Tabs>
           <Box sx={{ flexGrow: 1 }}></Box>
           <Tooltip title="Information about this screen">
@@ -680,11 +711,12 @@ const App = () => {
       <Box sx={{ mt: 9 }} hidden={tabValue !== "3"}>
         <Box sx={{ height: innerHeight - 50, width: "100%" }}>
           <Grid container>
-            <Grid item md={6}>
+            <Grid item md={12}>
               <Box sx={{ m: 1, mt: 2 }}>
                 Pressing Submit Job will do the following: Logon with encrypted
                 password, Get token, Submit job, Check status until complete
-                (every {checkSecs} secs), Get manifest, Show links to manifest items.
+                (every {checkSecs} secs), Get manifest, Show links to manifest
+                items.
               </Box>
             </Grid>
             <Grid item md={12}>
@@ -774,7 +806,22 @@ const App = () => {
                 disabled={jobRunning}
               />
             </Grid>
-            <Grid item md={6}>
+            <Grid item md={9}>
+              <Tooltip title="Parameters appear in JSON format and can be edited, as long as you keep valid JSON.">
+                <TextField
+                  // ref={parmRef}
+                  size="small"
+                  label="Parms to use"
+                  value={parmsToUse}
+                  onChange={(e) => {
+                    setParmsToUse(e.target.value);
+                  }}
+                  sx={{ mt: 1, width: "100%" }}
+                  disabled={jobRunning}
+                />
+              </Tooltip>
+            </Grid>
+            <Grid item md={3}>
               <Button
                 variant="contained"
                 size="small"
@@ -787,72 +834,90 @@ const App = () => {
             </Grid>
           </Grid>
 
-          <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
-            <b>Token: </b>
-            {token}
-          </Box>
-          <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
-            <b>Status: </b>
-            {submitStatus
-              ? submitStatus.type + " (" + submitStatus.code + ")"
-              : null}
-          </Box>
-          <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
-            <b>Submission ID: </b>
-            {submissionId || null}
-          </Box>
-          <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
-            <b>Job status: </b>
-            {jobStatus || null}
-          </Box>
-          <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
-            <b>Time taken: </b>
-            {timeTaken || null}
-          </Box>
-          <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
-            <b>View manifest: </b>
-            {pathManifest && (
-              <Link href={fileViewerPrefix + pathManifest} target="_blank">
-                {pathManifest}
-              </Link>
-            )}
-          </Box>
-          <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
-            <b>Open Log Viewer: </b>
-            {log && (
-              <Link href={logViewerPrefix + log} target="_blank">
-                {log}
-              </Link>
-            )}
-          </Box>
-          <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
-            <b>View results: </b>
-            {resultFile && (
-              <Link href={fileViewerPrefix + resultFile} target="_blank">
-                {resultFile}
-              </Link>
-            )}
-            <hr />
-            {outputFiles && (
-              <Box sx={{ backgroundColor: "#f7f7f7", fontWeight: "bold" }}>
-                Outputs:
-              </Box>
-            )}
-            <List dense>
-              {outputFiles &&
-                outputFiles.map((o, i) => {
-                  let prefix = fileViewerPrefix;
-                  if (o.includes(".log")) prefix = logViewerPrefix;
-                  return (
-                    <ListItem key={"out" + i}>
-                      <Link href={prefix + o} target="_blank">
-                        {o}
-                      </Link>
-                    </ListItem>
-                  );
-                })}
-            </List>
-          </Box>
+          <Tooltip title="REST API token, which is obtained by logging into LSAF using your username and encrypted password.">
+            <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
+              <b>Token: </b>
+              {token}
+            </Box>
+          </Tooltip>
+          <Tooltip title="After submitting the job we receive a status back.">
+            <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
+              <b>Status: </b>
+              {submitStatus
+                ? submitStatus.type + " (" + submitStatus.code + ")"
+                : null}
+            </Box>
+          </Tooltip>
+          <Tooltip title="After submitting the job we receive a submission ID back, which is used to get further information about the job that is running.">
+            <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
+              <b>Submission ID: </b>
+              {submissionId || null}
+            </Box>
+          </Tooltip>
+          <Tooltip title="We query the job status every specified number of seconds until it is completed.">
+            <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
+              <b>Job status: </b>
+              {jobStatus || null}
+            </Box>
+          </Tooltip>
+          <Tooltip title="This is updated every time the status is checked, until the job is completed.">
+            <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
+              <b>Time taken: </b>
+              {timeTaken || null}
+            </Box>
+          </Tooltip>
+          <Tooltip title="Link to fileviewer to show the manifest for the job.">
+            <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
+              <b>View manifest: </b>
+              {pathManifest && (
+                <Link href={fileViewerPrefix + pathManifest} target="_blank">
+                  {pathManifest}
+                </Link>
+              )}
+            </Box>
+          </Tooltip>
+          <Tooltip title="Link to view the log from the job with the log viewer app">
+            <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
+              <b>Open Log Viewer: </b>
+              {log && (
+                <Link href={logViewerPrefix + log} target="_blank">
+                  {log}
+                </Link>
+              )}
+            </Box>
+          </Tooltip>
+          <Tooltip title="Link to view the listing of the results from the job.">
+            <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
+              <b>View results: </b>
+              {resultFile && (
+                <Link href={fileViewerPrefix + resultFile} target="_blank">
+                  {resultFile}
+                </Link>
+              )}
+              <hr />
+              {outputFiles && (
+                <Tooltip title="The following links are to each output that the manifest file has listed.">
+                  <Box sx={{ backgroundColor: "#f7f7f7", fontWeight: "bold" }}>
+                    Outputs:
+                  </Box>
+                </Tooltip>
+              )}
+              <List dense>
+                {outputFiles &&
+                  outputFiles.map((o, i) => {
+                    let prefix = fileViewerPrefix;
+                    if (o.includes(".log")) prefix = logViewerPrefix;
+                    return (
+                      <ListItem key={"out" + i}>
+                        <Link href={prefix + o} target="_blank">
+                          {o}
+                        </Link>
+                      </ListItem>
+                    );
+                  })}
+              </List>
+            </Box>
+          </Tooltip>
         </Box>
       </Box>
       {/* Dialog with General info about this screen */}
@@ -862,9 +927,31 @@ const App = () => {
         onClose={() => setOpenInfo(false)}
         open={openInfo}
       >
-        <DialogTitle>Info about this screen</DialogTitle>
+        <DialogTitle>Running jobs using the REST API app</DialogTitle>
         <DialogContent>
-          <Box sx={{ color: "blue", fontSize: 11 }}>Description goes here.</Box>
+          <Box sx={{ color: "blue", fontSize: 11 }}>
+            This app is used to run a job with the REST API. It requires the
+            user to be authenticated having their username and encrypted
+            password stored. That then allows REST API calls to occur without
+            the user needing to authenticate every time.
+            <p />
+            <p />
+            Parameters can be passed on the URL by prefixing them with an _ and
+            then using the parameter name. For example, to pass a parameter
+            named study with a value of 123, the URL would have at the end:
+            <br />
+            <b>
+              <code>&_study=123</code>
+            </b>
+            <p />
+            <a
+              href="https://xarprod.ondemand.sas.com:8000/lsaf/api/reference"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              SAS® Life Science Analytics Framework REST API (1.0)
+            </a>
+          </Box>
         </DialogContent>
       </Dialog>
     </>
