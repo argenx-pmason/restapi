@@ -13,6 +13,7 @@ import {
   ListItem,
   Toolbar,
   TextField,
+  ButtonGroup,
   IconButton,
   Tabs,
   Tab,
@@ -47,6 +48,7 @@ const App = () => {
     every = params.get("every"),
     fileViewerPrefix = `https://${server}/lsaf/filedownload/sdd:/general/biostat/apps/fileviewer/index.html?file=`,
     logViewerPrefix = `https://${server}/lsaf/filedownload/sdd:/general/biostat/apps/logviewer/index.html?log=`,
+    repoPrefix = `https://${server}/lsaf/webdav/`,
     api = "https://" + realhost + "/lsaf/api",
     // urlPrefix = window.location.protocol + "//" + window.location.host,
     // apiRef = useGridApiRef(),
@@ -58,6 +60,7 @@ const App = () => {
     [encryptedPassword, setEncryptedPassword] = useState(null),
     [jobRunning, setJobRunning] = useState(false),
     [parmsToUse, setParmsToUse] = useState(""),
+    [repo, setRepo] = useState("repository"), // repository or workspace
     encryptPassword = () => {
       const url = api + "/encrypt",
         myHeaders = new Headers();
@@ -254,9 +257,9 @@ const App = () => {
         body: parmsToUse,
       };
       setJobRunning(true);
-      console.log(useJob, url + "/jobs/repository" + useJob + "?action=run");
+      console.log(useJob, url + `/jobs/${repo}` + useJob + "?action=run");
       return fetch(
-        url + "/jobs/repository" + useJob + "?action=run",
+        url + "/jobs/" + repo + useJob + "?action=run",
         requestOptions
       )
         .then((response) => {
@@ -363,7 +366,7 @@ const App = () => {
       const useToken = tok || token,
         useManifest = pathMan || pathManifest,
         url = api,
-        apiRequest = `/repository/files/${useManifest}?component=contents`,
+        apiRequest = `/${repo}/files/${useManifest}?component=contents`,
         myHeaders = new Headers();
       myHeaders.append("X-Auth-Token", useToken);
       const requestOptions = {
@@ -387,18 +390,34 @@ const App = () => {
           const jm = dataJSON["job-manifest"],
             { job } = jm,
             { logs, results, inputs, outputs, parameters, programs } = job,
+            { input } = inputs,
             { output } = outputs,
-            output_files = output.map((o) => o["repository-file"]._text),
+            output_files = output.map((o) => {
+              const out =
+                repo === "repository"
+                  ? o["repository-file"]._text
+                  : o["workspace-file"]._text;
+              return out;
+            }),
             char_parm = parameters["character-parameter"],
             folder_parm = parameters["folder-parameter"],
             { program } = programs,
-            rf_prog = program["repository-file"],
+            rf_prog =
+              repo === "repository"
+                ? program["repository-file"]
+                : program["workspace-file"],
             { _text: prog_path } = rf_prog,
             { log } = logs,
-            rf_log = log["repository-file"],
+            rf_log =
+              repo === "repository"
+                ? log["repository-file"]
+                : log["workspace-file"],
             { _text: log_path } = rf_log,
             { result } = results,
-            repositoryFile = result["repository-file"],
+            repositoryFile =
+              repo === "repository"
+                ? result["repository-file"]
+                : result["workspace-file"],
             { _text: repository_path } = repositoryFile;
           console.log(
             "getManifest - log_path",
@@ -426,7 +445,7 @@ const App = () => {
       const useToken = tok || token,
         useFile = file || log,
         url = api,
-        apiRequest = `/repository/files/${useFile}?component=contents`,
+        apiRequest = `/${repo}/files/${useFile}?component=contents`,
         myHeaders = new Headers();
       myHeaders.append("X-Auth-Token", useToken);
       const requestOptions = {
@@ -449,7 +468,7 @@ const App = () => {
       const useToken = tok || token,
         useFile = "/general/biostat/jobs/utils/dev/output/demo.json",
         url = api,
-        apiRequest = `/repository/files/${useFile}?action=upload`,
+        apiRequest = `/${repo}/files/${useFile}?action=upload`,
         myHeaders = new Headers(),
         formdata = new FormData(),
         jsonString = JSON.stringify(demoJson),
@@ -543,6 +562,28 @@ const App = () => {
             <Tab label="Better" value="2" />
             <Tab label="Best" value="3" />
           </Tabs>
+          <ButtonGroup sx={{ mt: 1, ml: 2 }} variant="outlined">
+            <Button
+              color={repo === "repository" ? "success" : "warning"}
+              variant={repo === "repository" ? "contained" : "outlined"}
+              size={"small"}
+              onClick={async () => {
+                setRepo("repository");
+              }}
+            >
+              Repository
+            </Button>
+            <Button
+              color={repo === "workspace" ? "success" : "warning"}
+              variant={repo === "workspace" ? "contained" : "outlined"}
+              size={"small"}
+              onClick={async () => {
+                setRepo("workspace");
+              }}
+            >
+              Workspace
+            </Button>
+          </ButtonGroup>
           <Box sx={{ flexGrow: 1 }}></Box>
           <Tooltip title="Information about this screen">
             <IconButton
@@ -617,7 +658,10 @@ const App = () => {
         <Box sx={{ backgroundColor: "#e6f2ff" }}>
           Log path extracted from manifest XML:{" "}
           {log && (
-            <Link href={logViewerPrefix + log} target="_blank">
+            <Link
+              href={logViewerPrefix + repoPrefix + repo.slice(0, 4) + log}
+              target="_blank"
+            >
               {log}
             </Link>
           )}
@@ -682,7 +726,15 @@ const App = () => {
           <Box sx={{ backgroundColor: "#f7f7f7" }}>
             Manifest path:{" "}
             {pathManifest && (
-              <Link href={fileViewerPrefix + pathManifest} target="_blank">
+              <Link
+                href={
+                  fileViewerPrefix +
+                  repoPrefix +
+                  repo.slice(0, 4) +
+                  pathManifest
+                }
+                target="_blank"
+              >
                 {pathManifest}
               </Link>
             )}
@@ -690,14 +742,22 @@ const App = () => {
           <Box sx={{ backgroundColor: "#e6f2ff" }}>
             Log path extracted from manifest XML:{" "}
             {log && (
-              <Link href={logViewerPrefix + log} target="_blank">
+              <Link
+                href={logViewerPrefix + repoPrefix + repo.slice(0, 4) + log}
+                target="_blank"
+              >
                 {log}
               </Link>
             )}
             <br />
             Path to results extracted from manifest XML:{" "}
             {resultFile && (
-              <Link href={fileViewerPrefix + resultFile} target="_blank">
+              <Link
+                href={
+                  fileViewerPrefix + repoPrefix + repo.slice(0, 4) + resultFile
+                }
+                target="_blank"
+              >
                 {resultFile}
               </Link>
             )}
@@ -870,7 +930,15 @@ const App = () => {
             <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
               <b>View manifest: </b>
               {pathManifest && (
-                <Link href={fileViewerPrefix + pathManifest} target="_blank">
+                <Link
+                  href={
+                    fileViewerPrefix +
+                    repoPrefix +
+                    repo.slice(0, 4) +
+                    pathManifest
+                  }
+                  target="_blank"
+                >
                   {pathManifest}
                 </Link>
               )}
@@ -880,7 +948,10 @@ const App = () => {
             <Box sx={{ backgroundColor: "#f7f7f7", mt: 1 }}>
               <b>Open Log Viewer: </b>
               {log && (
-                <Link href={logViewerPrefix + log} target="_blank">
+                <Link
+                  href={logViewerPrefix + repoPrefix + repo.slice(0, 4) + log}
+                  target="_blank"
+                >
                   {log}
                 </Link>
               )}
@@ -890,7 +961,15 @@ const App = () => {
             <Box sx={{ backgroundColor: "#e6f2ff", mt: 1 }}>
               <b>View results: </b>
               {resultFile && (
-                <Link href={fileViewerPrefix + resultFile} target="_blank">
+                <Link
+                  href={
+                    fileViewerPrefix +
+                    repoPrefix +
+                    repo.slice(0, 4) +
+                    resultFile
+                  }
+                  target="_blank"
+                >
                   {resultFile}
                 </Link>
               )}
@@ -905,8 +984,10 @@ const App = () => {
               <List dense>
                 {outputFiles &&
                   outputFiles.map((o, i) => {
-                    let prefix = fileViewerPrefix;
-                    if (o.includes(".log")) prefix = logViewerPrefix;
+                    let prefix =
+                      fileViewerPrefix + repoPrefix + repo.slice(0, 4);
+                    if (o.includes(".log"))
+                      prefix = logViewerPrefix + repoPrefix + repo.slice(0, 4);
                     return (
                       <ListItem key={"out" + i}>
                         <Link href={prefix + o} target="_blank">
